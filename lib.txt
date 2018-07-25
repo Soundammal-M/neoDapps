@@ -1,0 +1,290 @@
+using Neo.SmartContract.Framework;
+using Neo.SmartContract.Framework.Services.Neo;
+using System;
+using System.Numerics;
+
+namespace library
+{
+    public class Contract1 : SmartContract
+    {
+        private static readonly byte[] Owner = "AUXEG82t5y5ZcNNJzJVjqXzHnLncV2CZyy".ToScriptHash();
+        // private static byte[] Isbn = new byte[] { };
+
+        //private static readonly BigInteger Book_count;
+        //private static byte[] student_detail;
+        //  private static BigInteger B_avail;
+        // public static byte[] bk_isbn;
+        private static BigInteger endTime;
+
+        public static Object Main(String oper, Object[] args)
+        {
+            if (oper == "deploy")
+            {
+                if (!Runtime.CheckWitness(Owner)) return false;
+                return Deploy();
+            }
+            if (oper == "addBooks")
+            {
+                 if (!Runtime.CheckWitness(Owner)) return false;
+                return AddBooks((byte[])args[0], (string)args[1], (BigInteger)args[2]);
+
+            }
+            if (oper == "search")
+            {
+                return Search_bk((byte[])args[0]);
+            }
+            if (oper == "view_bk")
+            {
+                return View_bk((byte[])args[0]);
+            }
+            if (oper == "total_bkCount")
+            {
+                return Total_bkCount();
+            }
+            if (oper == "addstudent_details")
+            {
+                if (!Runtime.CheckWitness(Owner)) return false;
+                return Addstudent_details((string)args[0], (uint)args[1]);
+            }
+            if (oper == "viewStudent_detail")
+            {
+                return ViewStudent_detail((uint)args[0]);
+            }
+            if (oper == "getbooks")
+            {
+                return Getbooks((uint)args[0], (byte[])args[1], (string)args[2]);
+            }
+            if (oper == "returnbook")
+            {
+                //if (!Runtime.CheckWitness(Owner)) return false;
+                return Returnbook((uint)args[0], (byte[])args[1]);
+            }
+
+            return false;
+
+
+
+        }
+        public static bool Deploy()
+        {
+            byte[] Isbn = new byte[] { };
+            BigInteger Book_count = 0;
+            Storage.Put(Storage.CurrentContext, "ISBN", Isbn);
+            Storage.Put(Storage.CurrentContext, "Total_books", Book_count);
+            Runtime.Notify("deployed done");
+
+            return true;
+        }
+
+
+        //private static BigInteger B_avail = 0;
+        public static bool AddBooks(byte[] Isbn, string book_name, BigInteger b_avail)
+        {
+            byte[][] isbnt = new byte[50][];
+            uint a = 0;
+
+            BigInteger B_avail = 0;
+            Runtime.Notify("start");
+            // byte[] ISbn = Storage.Get(Storage.CurrentContext, "ISBN");
+            isbnt[a] = Isbn;
+
+            Runtime.Notify("start1");
+
+
+            byte[] ISbn = Neo.SmartContract.Framework.Helper.AsByteArray("ISBN").Concat(Isbn);
+            Storage.Put(Storage.CurrentContext, ISbn, Isbn);
+            B_avail = B_avail + b_avail;
+            Runtime.Notify("start2");
+
+            byte[] bk_name = Neo.SmartContract.Framework.Helper.AsByteArray(book_name);
+            byte[] bk_avail = Neo.SmartContract.Framework.Helper.AsByteArray(b_avail);
+            byte[] bk_detail = Isbn.Concat(("-").AsByteArray()).Concat(bk_name).Concat(("-").AsByteArray()).Concat(bk_avail);
+            //Storage.Put(Storage.CurrentContext, bk_isbn[a], bk_detail);
+            Storage.Put(Storage.CurrentContext, Isbn, bk_detail);
+            Storage.Put(Storage.CurrentContext, "bk_avail", B_avail);
+            byte[] tot_books = Storage.Get(Storage.CurrentContext, "Total_books");
+
+            BigInteger Tot_Books = Neo.SmartContract.Framework.Helper.AsBigInteger(tot_books) + b_avail;
+            Runtime.Notify(Tot_Books);
+            Storage.Put(Storage.CurrentContext, "Total_books", Tot_Books);
+
+            Runtime.Notify("A");
+
+            return true;
+        }
+        public static bool Search_bk(byte[] Isbn)
+        {
+            Runtime.Notify("c1");
+            byte[] IsbN = Neo.SmartContract.Framework.Helper.AsByteArray("ISBN").Concat(Isbn);
+            byte[] d1 = Storage.Get(Storage.CurrentContext, IsbN);
+
+            if (d1 != null)
+            {
+                Runtime.Notify("c2");
+                return true;
+            }
+            Runtime.Notify("B");
+
+            return false;
+
+        }
+        public static byte[] View_bk(byte[] isbn)
+        {
+            byte[] Bk_detail = Storage.Get(Storage.CurrentContext, isbn);
+            Runtime.Notify("C");
+
+            return Bk_detail;
+        }
+        public static byte[] Total_bkCount()
+        {
+            byte[] Total_Bk = Storage.Get(Storage.CurrentContext, "Total_books");
+            //BigInteger TotalCount = Neo.SmartContract.Framework.Helper.AsBigInteger(Total_Bk);
+            Runtime.Notify(Total_Bk);
+
+            return Total_Bk;
+        }
+        private static byte[][] student = new byte[100][];
+
+
+        public static bool Addstudent_details(string stu_name, uint roll_no)
+        {
+
+            byte[] ISbn = Neo.SmartContract.Framework.Helper.AsByteArray("stu").Concat(Neo.SmartContract.Framework.Helper.AsByteArray("roll_no"));
+            Storage.Put(Storage.CurrentContext, ISbn, stu_name);
+
+            byte[] student_detail = null;
+            //uint b = 1;
+            Runtime.Notify("stu1");
+
+            byte[] stu = Neo.SmartContract.Framework.Helper.AsByteArray(stu_name);
+            byte[] roll = Neo.SmartContract.Framework.Helper.AsByteArray(roll_no);
+            Runtime.Notify("stu2");
+            // student[b] = roll;
+            Runtime.Notify("stu3");
+            student_detail = stu.Concat(("-").AsByteArray()).Concat(roll);
+            Storage.Put(Storage.CurrentContext, "stu_details", student_detail);
+            //b++;
+            Runtime.Notify("E");
+
+            return true;
+        }
+        public static byte[] ViewStudent_detail(uint roll_no)
+        {
+            Runtime.Notify("F");
+
+            return Storage.Get(Storage.CurrentContext, "stu_details");
+        }
+
+
+        public static bool Getbooks(uint roll_no, byte[] Isbn, string bk_name)
+        {
+            bool t = Search_bk(Isbn);
+            if (t == true)
+            {
+                byte[] tot = Storage.Get(Storage.CurrentContext, "Total_books");
+                BigInteger tot1 = Neo.SmartContract.Framework.Helper.AsBigInteger(tot);
+                tot1 = tot1 - 1;
+                Storage.Put(Storage.CurrentContext, "Total_books", tot1);
+                Runtime.Notify("G");
+
+                byte[] bk = Storage.Get(Storage.CurrentContext, "bk_avail");
+                BigInteger bk_availl = Neo.SmartContract.Framework.Helper.AsBigInteger(bk) - 1;
+                Storage.Put(Storage.CurrentContext, "bk_avail", bk_availl);
+                Runtime.Notify("H");
+
+
+                BigInteger now = Blockchain.GetHeader(Blockchain.GetHeight()).Timestamp;
+
+                byte[] roll = Neo.SmartContract.Framework.Helper.AsByteArray(roll_no);
+                byte[] key = roll.Concat(Isbn);
+                Runtime.Notify("I");
+                Runtime.Notify(now);
+
+                Storage.Put(Storage.CurrentContext, key, now);
+
+
+                return true;
+
+            }
+            return false;
+        }
+
+        public static bool Returnbook(uint roll_no, byte[] isbn)
+        {
+            BigInteger amnt = 2;
+            byte[] roll = Neo.SmartContract.Framework.Helper.AsByteArray(roll_no);
+            byte[] key = roll.Concat(isbn);
+
+
+            Runtime.Notify("J");
+
+
+
+            byte[] tot = Storage.Get(Storage.CurrentContext, "Total_books");
+            BigInteger tot1 = Neo.SmartContract.Framework.Helper.AsBigInteger(tot);
+            tot1 = tot1 + 1;
+            byte[] bk = Storage.Get(Storage.CurrentContext, "bk_avail");
+            BigInteger bk_availl = Neo.SmartContract.Framework.Helper.AsBigInteger(bk) + 1;
+            Storage.Put(Storage.CurrentContext, "bk_avail", bk_availl);
+            Storage.Put(Storage.CurrentContext, "Total_books", tot1);
+
+            BigInteger now = Blockchain.GetHeader(Blockchain.GetHeight()).Timestamp;
+            Runtime.Notify(now);
+            byte[] ee = Storage.Get(Storage.CurrentContext, key);
+            Runtime.Notify(ee);
+            BigInteger s1 = Neo.SmartContract.Framework.Helper.AsBigInteger(ee);
+            Runtime.Notify("K");
+
+            if (now > s1)
+            {
+                BigInteger d = now - s1;
+                Runtime.Notify(d);
+                BigInteger ck = (d * 60);
+               // BigInteger ck = ((d / 60) / 60) / 24;
+                Runtime.Notify("L");
+                Runtime.Notify(ck);
+
+                if (ck > 1)
+                {
+                    BigInteger t = d * 60;
+                    BigInteger c1 = t * amnt;
+                    Runtime.Notify(c1);
+                    Runtime.Notify("M");
+
+                }
+                return true;
+            }
+            return true;
+        }
+
+
+    }
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
